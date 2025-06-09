@@ -1,1 +1,1 @@
-export const BASE_URL = 'https://api.datejournals.com';
+export const BASE_URL = 'https://fittingroom.hatchwise.me';

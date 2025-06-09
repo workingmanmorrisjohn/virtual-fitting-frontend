@@ -100,7 +100,7 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
       <div className="card w-96 bg-white shadow-xl">
         <div className="card-body">
-          <h1 className="text-2xl font-bold text-center">Hatchwise Admin</h1>
+          <h1 className="text-2xl font-bold text-center">Virtual Fitting System</h1>
 
           {!mfaRequired ? (
             <form onSubmit={handleSubmit} className="form-control">
