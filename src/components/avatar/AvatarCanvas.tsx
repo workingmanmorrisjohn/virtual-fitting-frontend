@@ -1,12 +1,11 @@
-import { User} from "lucide-react";
+import { User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { BASE_URL } from "../../constants/BaseUrl";
 
 interface AvatarCanvasProps {
-    modelPath: string;
+    modelPath: string | null;
 }
 
 const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
@@ -21,14 +20,24 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
     const [isInteracting, setIsInteracting] = useState(false);
     const [avatarLoaded, setAvatarLoaded] = useState(false);
     const [loadingError, setLoadingError] = useState<string | null>(null);
-    
+
+    if (!modelPath) return (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-300">
+            <div className="flex items-center gap-3 mb-6">
+                <User className="text-gray-700" size={20} />
+                <h2 className="text-lg font-semibold text-gray-800">3D Avatar</h2>
+            </div>
+            <p>Avatar not available</p>
+        </div>
+    );
+
 
     // Load avatar GLB file
     const loadAvatar = async () => {
         if (!sceneRef.current) return;
 
         const loader = new GLTFLoader();
-        
+
         try {
             const gltf = await new Promise<any>((resolve, reject) => {
                 loader.load(
@@ -45,22 +54,22 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
             }
 
             const avatar = gltf.scene;
-            
+
             // Calculate bounding box to position avatar correctly
             const box = new THREE.Box3().setFromObject(avatar);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
-            
+
             // Scale the avatar appropriately for the viewer
             const maxDimension = Math.max(size.x, size.y, size.z);
             const scaleFactor = 3 / maxDimension;
             avatar.scale.setScalar(scaleFactor);
-            
+
             // Center the avatar and position it on the ground
             const scaledCenter = center.multiplyScalar(scaleFactor);
             const scaledSize = size.multiplyScalar(scaleFactor);
             avatar.position.set(0, -scaledCenter.y + scaledSize.y / 2 - 1.5, 0);
-            
+
             // Enable shadows for avatar
             avatar.traverse((child: any) => {
                 if (child.isMesh) {
@@ -78,10 +87,10 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
             console.error('Error loading avatar:', error);
             setLoadingError('Failed to load avatar model');
             setAvatarLoaded(false);
-            
+
             // Create a fallback representation
             const fallbackGeometry = new THREE.CapsuleGeometry(0.4, 1.6, 4, 8);
-            const material = new THREE.MeshLambertMaterial({ 
+            const material = new THREE.MeshLambertMaterial({
                 color: 0x8B9DC3,
                 transparent: true,
                 opacity: 0.8
@@ -90,7 +99,7 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
             fallbackMesh.castShadow = true;
             fallbackMesh.receiveShadow = true;
             fallbackMesh.position.set(0, 0, 0);
-            
+
             if (avatarMeshRef.current) {
                 sceneRef.current.remove(avatarMeshRef.current);
             }
@@ -132,17 +141,17 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
         controls.enablePan = false;
         controls.autoRotate = true;
         controls.autoRotateSpeed = 0.8;
-        
+
         // Limit vertical rotation to keep avatar in view
         controls.minPolarAngle = Math.PI / 6;
         controls.maxPolarAngle = Math.PI - Math.PI / 6;
-        
+
         // Configure OrbitControls for better interaction
         controls.touches = {
             ONE: THREE.TOUCH.ROTATE,
             TWO: THREE.TOUCH.DOLLY_PAN
         };
-        
+
         controlsRef.current = controls;
 
         // Add event listeners to track interaction state
@@ -230,59 +239,59 @@ const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
         <>
             {/* 3D Avatar Viewer */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-300">
-                    <div className="flex items-center gap-3 mb-6">
-                        <User className="text-gray-700" size={20} />
-                        <h2 className="text-lg font-semibold text-gray-800">3D Avatar</h2>
-                    </div>
-                    <div 
-                        ref={canvasContainerRef}
-                        className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl overflow-hidden relative flex justify-center"
-                        style={{
-                            touchAction: 'pan-y'
-                        }}
-                    >
-                        <canvas
-                            ref={canvasRef}
-                            className="block"
-                            width={400}
-                            height={400}
-                            style={{
-                                touchAction: 'none',
-                                cursor: isInteracting ? 'grabbing' : 'grab'
-                            }}
-                        />
-                        
-                        {/* Loading indicator */}
-                        {!avatarLoaded && !loadingError && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75">
-                                <div className="text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                                    <p className="text-gray-600">Loading avatar...</p>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Error message */}
-                        {loadingError && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75">
-                                <div className="text-center text-red-600">
-                                    <p className="text-sm">{loadingError}</p>
-                                    <button 
-                                        onClick={loadAvatar}
-                                        className="mt-2 px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-                                    >
-                                        Retry
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Instructions */}
-                    <div className="mt-3 text-xs text-gray-500 text-center">
-                        Click and drag to rotate • Scroll to zoom • Auto-rotates when idle
-                    </div>
+                <div className="flex items-center gap-3 mb-6">
+                    <User className="text-gray-700" size={20} />
+                    <h2 className="text-lg font-semibold text-gray-800">3D Avatar</h2>
                 </div>
+                <div
+                    ref={canvasContainerRef}
+                    className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl overflow-hidden relative flex justify-center"
+                    style={{
+                        touchAction: 'pan-y'
+                    }}
+                >
+                    <canvas
+                        ref={canvasRef}
+                        className="block"
+                        width={400}
+                        height={400}
+                        style={{
+                            touchAction: 'none',
+                            cursor: isInteracting ? 'grabbing' : 'grab'
+                        }}
+                    />
+
+                    {/* Loading indicator */}
+                    {!avatarLoaded && !loadingError && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                                <p className="text-gray-600">Loading avatar...</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Error message */}
+                    {loadingError && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75">
+                            <div className="text-center text-red-600">
+                                <p className="text-sm">{loadingError}</p>
+                                <button
+                                    onClick={loadAvatar}
+                                    className="mt-2 px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Instructions */}
+                <div className="mt-3 text-xs text-gray-500 text-center">
+                    Click and drag to rotate • Scroll to zoom • Auto-rotates when idle
+                </div>
+            </div>
         </>
     )
 
