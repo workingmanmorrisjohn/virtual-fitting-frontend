@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 interface ClothesCanvasProps {
-    modelPath: string
+    modelPath: string | null
 }
 
 const ClothesCanvas = ({ modelPath }: ClothesCanvasProps) => {
@@ -19,6 +19,13 @@ const ClothesCanvas = ({ modelPath }: ClothesCanvasProps) => {
     const [isInteracting, setIsInteracting] = useState(false);
     const [modelLoaded, setModelLoaded] = useState(false);
     const [loadingError, setLoadingError] = useState<string | null>(null);
+
+    if (!modelPath) return (
+        <div>
+                <h2 className="text-lg font-semibold text-gray-800 mb-3">3D Model</h2>
+                <p>Model Preview Not Available</p>
+        </div>
+    )
 
     const loadModel = async () => {
         if (!sceneRef.current) return;

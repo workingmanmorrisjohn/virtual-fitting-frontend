@@ -19,5 +19,7 @@ export enum CollectionNames {
     NOTIFICATIONS = 'Notifications',
     REPORTS = "Reports",
     COMMENTS = "Comments",
-    POSTS = "Posts"
+    POSTS = "Posts",
+    AVATARS = "Avatars",
+    CLOTHES = "Clothes",
 }

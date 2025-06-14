@@ -1,5 +1,7 @@
 import { BASE_URL } from "../constants/BaseUrl";
 import type { ModalNames } from "../enums/ModalNames";
+import type { Avatar } from "../types/Avatar";
+import type { Clothes } from "../types/Clothes";
 import type { Post } from "../types/Post";
 
 export const openModal = (modal_name: ModalNames) => {
@@ -12,6 +14,16 @@ export const closeModal = (modal_name: ModalNames) => {
 
 export function getFileURL(post: Post): string | null {
   const file_url = post.image ? `${BASE_URL}/api/files/${post.collectionName}/${post.id}/${post.image}` : null
+  return file_url
+}
+
+export function getFileURLFromAvatar(post: Avatar, filename: string | null): string | null {
+  const file_url = filename ? `${BASE_URL}/api/files/${post.collectionName}/${post.id}/${filename}` : null
+  return file_url
+}
+
+export function getFileURLFromClothes(post: Clothes, filename: string | null): string | null {
+  const file_url = filename ? `${BASE_URL}/api/files/${post.collectionName}/${post.id}/${filename}` : null
   return file_url
 }
 

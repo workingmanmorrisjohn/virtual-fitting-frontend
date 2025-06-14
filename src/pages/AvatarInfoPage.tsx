@@ -1,22 +1,28 @@
-import { ArrowLeft, User, Image, Ruler, CheckCircle } from "lucide-react";
+import { ArrowLeft, User, Image, Ruler, CheckCircle, ImageIcon } from "lucide-react";
 import Header from "../components/core/Header";
 import Page from "../components/core/Page";
 import Spacer from "../components/core/Spacer";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { RoutePath } from "../enums/RoutePath";
-import { BASE_URL } from "../constants/BaseUrl";
 import AvatarCanvas from "../components/avatar/AvatarCanvas";
+import { useAvatar } from "../hooks/useAvatars";
+import { getFileURLFromAvatar } from "../utils/UtilityFunctions";
+import StatusSection from "../components/avatar/StatusSection";
 
 const AvatarInfoPage = () => {
     const navigate = useNavigate();
 
-    const avatarFilePath = `${BASE_URL}/api/files/Avatars/4l4p4ds375mxk23/body_j9fceguxjh.glb`;
-    const avatar = {
-        id: "dinSDgin",
-        status: "ready",
-        front: `${BASE_URL}/api/files/Avatars/4l4p4ds375mxk23/front_ki4r0xpcln.png`,
-        side: `${BASE_URL}/api/files/Avatars/4l4p4ds375mxk23/side_46p8j6emgb.png`
-    }
+    const { id } = useParams<{ id: string }>();
+    const { data: avatar, isLoading, isError } = useAvatar(id);
+
+    if (isLoading) return <p>Loading avatar...</p>;
+    if (isError || !avatar) return <p>Avatar not found.</p>;
+    
+    const front_view_image = getFileURLFromAvatar(avatar, avatar.front_view);
+    const side_view_image = getFileURLFromAvatar(avatar, avatar.side_view);
+    const avatar_file_path = getFileURLFromAvatar(avatar, avatar.unrigged_glb);
+
+
 
     return (
         <Page>
@@ -36,12 +42,12 @@ const AvatarInfoPage = () => {
                     <div className="flex items-center gap-3">
                         <User className="text-gray-700" size={20} />
                         <p className="text-gray-800 font-medium">
-                            ID: <span className="text-black font-mono">conspioms</span>
+                            ID: {avatar.id} 
                         </p>
                     </div>
                 </div>
 
-                <AvatarCanvas modelPath={avatarFilePath} />
+                <AvatarCanvas modelPath={avatar_file_path} />
 
                 {/* Sources Section */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-300">
@@ -50,39 +56,24 @@ const AvatarInfoPage = () => {
                         <h2 className="text-lg font-semibold text-gray-800">Source Images</h2>
                     </div>
                     <div className="flex gap-6 justify-center">
-                        {/* {["Front View", "Side View"].map((label) => (
-                            <div className="group" key={label}>
-                                <div className="w-36 h-28 border-2 border-gray-300 rounded-xl bg-gray-100 flex items-center justify-center group-hover:shadow-md transition">
-                                    <Image className="text-gray-500 group-hover:text-black transition-colors" size={24} />
-                                    <img
-                                            src={avatar.front}
-                                            alt={`Avatar ${avatar.id}`}
-                                            className="w-full h-full object-cover"
-                                        />
-                                </div>
-                                <p className="text-xs text-gray-600 text-center mt-2">{label}</p>
-                            </div>
-                        ))} */}
-
                         <div className="group">
                             <div className="w-36 h-28 border-2 border-gray-300 rounded-xl bg-gray-100 flex items-center justify-center group-hover:shadow-md transition">
-                                <img
-                                    src={avatar.front}
+                                {front_view_image ? <img
+                                    src={front_view_image}
                                     alt={`Avatar ${avatar.id}`}
                                     className="w-full h-full object-cover"
-                                />
+                                /> : <ImageIcon />}
                             </div>
                             <p className="text-xs text-gray-600 text-center mt-2">Front</p>
                         </div>
 
                         <div className="group">
                             <div className="w-36 h-28 border-2 border-gray-300 rounded-xl bg-gray-100 flex items-center justify-center group-hover:shadow-md transition">
-
-                                <img
-                                    src={avatar.side}
+                               {side_view_image ? <img
+                                    src={side_view_image}
                                     alt={`Avatar ${avatar.id}`}
                                     className="w-full h-full object-cover"
-                                />
+                                /> : <ImageIcon />}
                             </div>
                             <p className="text-xs text-gray-600 text-center mt-2">Side</p>
                         </div>
@@ -98,10 +89,10 @@ const AvatarInfoPage = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                            { label: "Height", value: "--" },
-                            { label: "Shoulder Width", value: "--" },
-                            { label: "Torso heigt", value: "--" },
-                            { label: "Side Depth", value: "--" }
+                            { label: "Height", value: avatar.height ? avatar.height : "--" },
+                            { label: "Shoulder Width", value: avatar.shoulder ? avatar.shoulder : "--"},
+                            { label: "Torso heigt", value: avatar.torso ? avatar.torso : "--"},
+                            { label: "Side Depth", value: avatar.side_depth ? avatar.side_depth : "--" }
                         ].map(({ label, value }) => (
                             <div key={label} className="bg-gray-100 rounded-xl p-4 border border-gray-200">
                                 <p className="text-sm text-gray-600 mb-1">{label}</p>
@@ -114,15 +105,7 @@ const AvatarInfoPage = () => {
                 </div>
 
                 {/* Status Section */}
-                <div className="bg-gray-100 rounded-2xl p-6 shadow-sm border border-gray-300">
-                    <div className="flex items-center gap-3">
-                        <CheckCircle className="text-gray-700" size={24} />
-                        <div>
-                            <p className="text-gray-900 font-semibold">Processing Complete</p>
-                            <p className="text-gray-700 text-sm">Your avatar is ready for fitting</p>
-                        </div>
-                    </div>
-                </div>
+                <StatusSection status={avatar.status} />
 
                 {/* Go To Fitting Room Button */}
                 <div className="flex justify-center pt-4">

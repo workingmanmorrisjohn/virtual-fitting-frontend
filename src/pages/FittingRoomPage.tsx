@@ -12,11 +12,20 @@ import { BASE_URL } from "../constants/BaseUrl";
 
 type SizeOption = "S" | "M" | "L" | "XL";
 
-type ClothingShape = {
+type ClothingItem = {
+    id: string;
     name: string;
-    geometry: () => THREE.BufferGeometry;
+    filePath: string;
+    thumbnail?: string;
     scale: number;
     position: [number, number, number];
+};
+
+type ClothingSize = {
+    size: SizeOption;
+    scale: number;
+    color: number;
+    filePath?: string; // For when sizes have different files
 };
 
 const FittingRoomPage: React.FC = () => {
@@ -29,52 +38,74 @@ const FittingRoomPage: React.FC = () => {
     const clothingMeshRef = useRef<THREE.Mesh | null>(null);
     const avatarMeshRef = useRef<THREE.Group | null>(null);
     const controlsRef = useRef<OrbitControls | null>(null);
+    const gltfLoaderRef = useRef<GLTFLoader>(new GLTFLoader());
 
     const [selectedSize, setSelectedSize] = useState<SizeOption>("M");
     const [currentClothingIndex, setCurrentClothingIndex] = useState<number>(0);
     const [isInteracting, setIsInteracting] = useState(false);
     const [avatarLoaded, setAvatarLoaded] = useState(false);
+    const [clothingLoaded, setClothingLoaded] = useState(false);
     const [loadingError, setLoadingError] = useState<string | null>(null);
+    const [isLoadingClothing, setIsLoadingClothing] = useState(false);
 
     const avatarFilePath = `${BASE_URL}/api/files/Avatars/4l4p4ds375mxk23/body_j9fceguxjh.glb`;
-    const shirtFilePath = `${BASE_URL}/api/files/Clothes/2a1ru54lv9j4hsv/tshirt_4ptutrgxxb.glb`;
 
-    const sizeColors: Record<SizeOption, number> = {
-        S: 0xff6b6b,
-        M: 0x4ecdc4,
-        L: 0x45b7d1,
-        XL: 0x96ceb4
-    };
-
-    const sizeScales: Record<SizeOption, number> = {
-        S: 0.8,
-        M: 0.9,
-        L: 0.95,
-        XL: 1.0
-    };
-
-    // Clothing shapes positioned relative to avatar
-    const clothingShapes: ClothingShape[] = [
-        { 
-            name: "T-Shirt GLB", 
-            geometry: () => new THREE.BoxGeometry(0, 0, 0), // Placeholder, will be replaced by GLB
-            scale: 1,
-            position: [0, 0, 0]
+    // Define clothing items
+    const clothingItems: ClothingItem[] = [
+        {
+            id: "tshirt_basic",
+            name: "Basic T-Shirt",
+            filePath: `${BASE_URL}/api/files/Clothes/2a1ru54lv9j4hsv/tshirt_4ptutrgxxb.glb`,
+            scale: 2,
+            position: [0, -1.5, 0]
+        },
+        {
+            id: "denim_jacket",
+            name: "Denim Jacket",
+            filePath: `${BASE_URL}/api/files/Clothes/0eh6554rim3kl6q/denim_jacket_sleeveless_with_white_t_shirt_p21po5ioay.glb`,
+            scale: 2,
+            position: [0, -1.5, 0]
+        },
+        {
+            id: "hyde_jacket",
+            name: "Hyde Jacket",
+            filePath: `${BASE_URL}/api/files/Clothes/877g8yxn46zismd/hyde_jacket_wadpak4azb.glb`,
+            scale: 2,
+            position: [0, -1.5, 0]
         }
     ];
 
-    // Load shirt GLB file
-    const loadShirt = async () => {
+    // Define size configurations
+    const sizeConfigurations: Record<SizeOption, ClothingSize> = {
+        S: { size: "S", scale: 0.8, color: 0xff6b6b },
+        M: { size: "M", scale: 0.9, color: 0x4ecdc4 },
+        L: { size: "L", scale: 0.95, color: 0x45b7d1 },
+        XL: { size: "XL", scale: 1.0, color: 0x96ceb4 }
+    };
+
+    // Get current clothing item
+    const currentClothingItem = clothingItems[currentClothingIndex];
+    const currentSizeConfig = sizeConfigurations[selectedSize];
+
+    // Load clothing GLB file
+    const loadClothing = async (clothingItem: ClothingItem, sizeConfig: ClothingSize) => {
         if (!sceneRef.current) return;
 
-        const loader = new GLTFLoader();
-        
+        setIsLoadingClothing(true);
+        setClothingLoaded(false);
+
         try {
+            // Determine which file to load (size-specific or default)
+            const fileToLoad = sizeConfig.filePath || clothingItem.filePath;
+
             const gltf = await new Promise<any>((resolve, reject) => {
-                loader.load(
-                    shirtFilePath,
+                gltfLoaderRef.current.load(
+                    fileToLoad,
                     resolve,
-                    undefined,
+                    (progress) => {
+                        // Optional: Handle loading progress
+                        console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+                    },
                     reject
                 );
             });
@@ -82,73 +113,102 @@ const FittingRoomPage: React.FC = () => {
             // Remove existing clothing if any
             if (clothingMeshRef.current) {
                 sceneRef.current.remove(clothingMeshRef.current);
+                clothingMeshRef.current = null;
             }
 
-            const shirt = gltf.scene;
+            const clothing = gltf.scene.clone();
             
-            // Scale the shirt to match avatar
-            shirt.scale.setScalar(2);
+            // Apply base scale from clothing item
+            clothing.scale.setScalar(clothingItem.scale);
             
-            // Position shirt on avatar (adjust as needed)
-            shirt.position.set(0, -1.5, 0);
+            // Apply position from clothing item
+            clothing.position.set(...clothingItem.position);
             
-            // Apply size and color modifications
-            shirt.traverse((child: any) => {
+            // Configure clothing materials and apply size/color
+            clothing.traverse((child: any) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                     
-                    // Apply size scaling
-                    child.scale.setScalar(sizeScales[selectedSize]);
+                    // Apply size scaling to individual mesh
+                    const sizeScale = sizeConfig.scale;
+                    child.scale.setScalar(sizeScale);
                     
                     // Apply color if the material supports it
                     if (child.material) {
-                        // Create a new material with the selected color
+                        // Clone material to avoid affecting other instances
                         const material = child.material.clone();
-                        material.color = new THREE.Color(sizeColors[selectedSize]);
+                        
+                        // Apply color based on size
+                        if (material.color) {
+                            material.color = new THREE.Color(sizeConfig.color);
+                        }
+                        
+                        // Ensure material properties for better rendering
+                        if (material.map) {
+                            // If there's a texture, blend it with the size color
+                            material.color = new THREE.Color(sizeConfig.color);
+                        }
+                        
                         child.material = material;
                     }
                 }
             });
 
-            sceneRef.current.add(shirt);
-            clothingMeshRef.current = shirt;
+            sceneRef.current.add(clothing);
+            clothingMeshRef.current = clothing;
+            setClothingLoaded(true);
+            setLoadingError(null);
 
         } catch (error) {
-            console.error('Error loading shirt:', error);
-            // Fallback to basic geometry if GLB fails
-            const fallbackGeometry = new THREE.BoxGeometry(1.8, 2.2, 0.8);
-            const material = new THREE.MeshLambertMaterial({ 
-                color: sizeColors[selectedSize],
-                transparent: true,
-                opacity: 0.8
-            });
-            const fallbackMesh = new THREE.Mesh(fallbackGeometry, material);
-            fallbackMesh.castShadow = true;
-            fallbackMesh.receiveShadow = true;
-            fallbackMesh.position.set(0, 0.5, 0);
-            fallbackMesh.scale.setScalar(sizeScales[selectedSize]);
+            console.error('Error loading clothing:', error);
+            setLoadingError(`Failed to load ${clothingItem.name}`);
             
-            if (clothingMeshRef.current) {
-                sceneRef.current.remove(clothingMeshRef.current);
-            }
-            sceneRef.current.add(fallbackMesh);
-            clothingMeshRef.current = fallbackMesh;
+            // Create fallback geometry
+            createFallbackClothing(clothingItem, sizeConfig);
+        } finally {
+            setIsLoadingClothing(false);
         }
+    };
+
+    // Create fallback clothing when GLB fails to load
+    const createFallbackClothing = (clothingItem: ClothingItem, sizeConfig: ClothingSize) => {
+        if (!sceneRef.current) return;
+
+        const fallbackGeometry = new THREE.BoxGeometry(1.8, 2.2, 0.8);
+        const material = new THREE.MeshLambertMaterial({ 
+            color: sizeConfig.color,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const fallbackMesh = new THREE.Mesh(fallbackGeometry, material);
+        fallbackMesh.castShadow = true;
+        fallbackMesh.receiveShadow = true;
+        fallbackMesh.position.set(...clothingItem.position);
+        fallbackMesh.scale.setScalar(clothingItem.scale * sizeConfig.scale);
+        
+        if (clothingMeshRef.current) {
+            sceneRef.current.remove(clothingMeshRef.current);
+        }
+        
+        sceneRef.current.add(fallbackMesh);
+        clothingMeshRef.current = fallbackMesh;
+        setClothingLoaded(true);
     };
 
     // Load avatar GLB file
     const loadAvatar = async () => {
         if (!sceneRef.current) return;
 
-        const loader = new GLTFLoader();
-        
         try {
             const gltf = await new Promise<any>((resolve, reject) => {
-                loader.load(
+                gltfLoaderRef.current.load(
                     avatarFilePath,
                     resolve,
-                    undefined,
+                    (progress) => {
+                        console.log('Avatar loading progress:', (progress.loaded / progress.total * 100) + '%');
+                    },
                     reject
                 );
             });
@@ -169,8 +229,7 @@ const FittingRoomPage: React.FC = () => {
             avatar.scale.setScalar(2);
             
             // Position avatar so its bottom touches the floor
-            // The floor is at y = -2, so we need to adjust for the avatar's bottom
-            const avatarBottom = (center.y - size.y / 2) * 2; // multiply by scale
+            const avatarBottom = (center.y - size.y / 2) * 2;
             avatar.position.set(0, -2 - avatarBottom, 0);
             
             // Enable shadows for avatar
@@ -193,6 +252,7 @@ const FittingRoomPage: React.FC = () => {
         }
     };
 
+    // Initialize Three.js scene
     useEffect(() => {
         if (!canvasRef.current) return;
 
@@ -221,18 +281,15 @@ const FittingRoomPage: React.FC = () => {
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.target.set(0, 0, 0);
-        
-        // Configure OrbitControls for better mobile behavior
         controls.enableZoom = true;
         controls.enablePan = false;
         controls.touches = {
             ONE: THREE.TOUCH.ROTATE,
             TWO: THREE.TOUCH.DOLLY_PAN
         };
-        
         controlsRef.current = controls;
 
-        // Add event listeners to track interaction state
+        // Interaction tracking
         const onInteractionStart = () => {
             setIsInteracting(true);
             if (canvasContainerRef.current) {
@@ -267,7 +324,6 @@ const FittingRoomPage: React.FC = () => {
         directionalLight.shadow.camera.bottom = -10;
         scene.add(directionalLight);
 
-        // Add a fill light from the other side
         const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
         fillLight.position.set(-5, 5, 5);
         scene.add(fillLight);
@@ -281,12 +337,10 @@ const FittingRoomPage: React.FC = () => {
         floor.receiveShadow = true;
         scene.add(floor);
 
-        // Load avatar
+        // Load initial content
         loadAvatar();
 
-        // Load shirt GLB instead of creating basic geometry
-        loadShirt();
-
+        // Animation loop
         const animate = () => {
             animationIdRef.current = requestAnimationFrame(animate);
             controls.update();
@@ -294,12 +348,11 @@ const FittingRoomPage: React.FC = () => {
         };
         animate();
 
+        // Resize handler
         const handleResize = () => {
             if (!canvasRef.current || !renderer) return;
-
             const width = window.innerWidth;
             const height = window.innerHeight * 0.6;
-
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
@@ -319,44 +372,40 @@ const FittingRoomPage: React.FC = () => {
         };
     }, []);
 
-    // Update clothing color and size when size changes
+    // Load clothing when avatar is ready
     useEffect(() => {
-        if (clothingMeshRef.current) {
-            // For GLB models, traverse and update materials
-            clothingMeshRef.current.traverse((child: any) => {
-                if (child.isMesh && child.material) {
-                    child.material.color = new THREE.Color(sizeColors[selectedSize]);
-                    child.scale.setScalar(sizeScales[selectedSize]);
-                }
-            });
-            
-            // Also update the overall scale
-            clothingMeshRef.current.scale.setScalar(sizeScales[selectedSize]);
+        if (avatarLoaded && currentClothingItem) {
+            loadClothing(currentClothingItem, currentSizeConfig);
         }
-    }, [selectedSize]);
+    }, [avatarLoaded, currentClothingIndex, selectedSize]);
 
-    // Update clothing shape when clothing index changes (simplified since we only have one shirt)
-    useEffect(() => {
-        // Since we only have one clothing item (the GLB shirt), we can reload it when needed
-        if (currentClothingIndex === 0) {
-            loadShirt();
-        }
-    }, [currentClothingIndex, selectedSize]);
-
+    // Event handlers
     const handleSizeChange = (size: SizeOption) => {
         setSelectedSize(size);
     };
 
     const handlePreviousClothing = () => {
         setCurrentClothingIndex((prev) =>
-            prev === 0 ? clothingShapes.length - 1 : prev - 1
+            prev === 0 ? clothingItems.length - 1 : prev - 1
         );
     };
 
     const handleNextClothing = () => {
         setCurrentClothingIndex((prev) =>
-            prev === clothingShapes.length - 1 ? 0 : prev + 1
+            prev === clothingItems.length - 1 ? 0 : prev + 1
         );
+    };
+
+    const handleClothingSelect = (index: number) => {
+        setCurrentClothingIndex(index);
+    };
+
+    const handleRetryLoad = () => {
+        if (!avatarLoaded) {
+            loadAvatar();
+        } else if (currentClothingItem) {
+            loadClothing(currentClothingItem, currentSizeConfig);
+        }
     };
 
     return (
@@ -374,9 +423,7 @@ const FittingRoomPage: React.FC = () => {
                 <div 
                     ref={canvasContainerRef}
                     className="w-full bg-gray-100 border-2 border-gray-300 rounded-lg overflow-hidden relative"
-                    style={{
-                        touchAction: 'pan-y'
-                    }}
+                    style={{ touchAction: 'pan-y' }}
                 >
                     <canvas
                         ref={canvasRef}
@@ -388,12 +435,14 @@ const FittingRoomPage: React.FC = () => {
                         }}
                     />
                     
-                    {/* Loading indicator */}
-                    {!avatarLoaded && !loadingError && (
+                    {/* Loading indicators */}
+                    {(!avatarLoaded || isLoadingClothing) && !loadingError && (
                         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
                             <div className="text-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                                <p className="text-gray-600">Loading avatar...</p>
+                                <p className="text-gray-600">
+                                    {!avatarLoaded ? 'Loading avatar...' : 'Loading clothing...'}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -404,7 +453,7 @@ const FittingRoomPage: React.FC = () => {
                             <div className="text-center text-red-600">
                                 <p>{loadingError}</p>
                                 <button 
-                                    onClick={loadAvatar}
+                                    onClick={handleRetryLoad}
                                     className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                 >
                                     Retry
@@ -414,24 +463,27 @@ const FittingRoomPage: React.FC = () => {
                     )}
                 </div>
 
-                {/* Instructions for mobile users */}
+                {/* Mobile instructions */}
                 <div className="mt-2 text-sm text-gray-600 text-center md:hidden">
                     Use one finger to rotate • Use two fingers to zoom
                 </div>
 
+                {/* Size selection */}
                 <div className="mt-6">
                     <h3 className="text-lg font-medium mb-3">Size</h3>
                     <div className="flex gap-3">
-                        {(Object.keys(sizeColors) as SizeOption[]).map((size) => (
+                        {Object.keys(sizeConfigurations).map((size) => (
                             <button
                                 key={size}
-                                onClick={() => handleSizeChange(size)}
+                                onClick={() => handleSizeChange(size as SizeOption)}
+                                disabled={isLoadingClothing}
                                 className={`
                                     px-4 py-2 rounded-lg border-2 font-medium transition-all
                                     ${selectedSize === size
                                         ? "bg-blue-500 text-white border-blue-500"
                                         : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
                                     }
+                                    ${isLoadingClothing ? "opacity-50 cursor-not-allowed" : ""}
                                 `}
                             >
                                 {size}
@@ -440,23 +492,31 @@ const FittingRoomPage: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Clothing selection */}
                 <div className="mt-6">
                     <h3 className="text-lg font-medium mb-3">Clothes</h3>
-                    <div className="carousel w-full rounded-box">
-                        {clothingShapes.map((shape, index) => (
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                        {clothingItems.map((item, index) => (
                             <div
-                                key={index}
-                                className="carousel-item w-40 flex justify-center"
+                                key={item.id}
+                                className={`
+                                    min-w-32 h-32 rounded-lg border-2 flex items-center justify-center 
+                                    transition-all cursor-pointer flex-shrink-0
+                                    ${index === currentClothingIndex
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-gray-300 bg-white hover:border-gray-400'
+                                    }
+                                    ${isLoadingClothing ? "opacity-50 cursor-not-allowed" : ""}
+                                `}
+                                onClick={() => !isLoadingClothing && handleClothingSelect(index)}
                             >
-                                <div
-                                    className={`w-32 h-32 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer
-                        ${index === currentClothingIndex
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-300 bg-white hover:border-gray-400'
-                                        }`}
-                                    onClick={() => setCurrentClothingIndex(index)}
-                                >
-                                    <span className="text-sm font-medium text-gray-700">{shape.name}</span>
+                                <div className="text-center p-2">
+                                    <span className="text-sm font-medium text-gray-700 block">
+                                        {item.name}
+                                    </span>
+                                    {index === currentClothingIndex && isLoadingClothing && (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mx-auto mt-1"></div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -465,13 +525,15 @@ const FittingRoomPage: React.FC = () => {
                     <div className="flex justify-center gap-4 mt-4">
                         <button
                             onClick={handlePreviousClothing}
-                            className="btn btn-circle bg-gray-200 hover:bg-gray-300"
+                            disabled={isLoadingClothing}
+                            className="btn btn-circle bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
                         >
                             <ChevronLeft size={20} />
                         </button>
                         <button
                             onClick={handleNextClothing}
-                            className="btn btn-circle bg-gray-200 hover:bg-gray-300"
+                            disabled={isLoadingClothing}
+                            className="btn btn-circle bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
                         >
                             <ChevronRight size={20} />
                         </button>
@@ -480,12 +542,12 @@ const FittingRoomPage: React.FC = () => {
 
                 {/* Status info */}
                 <div className="mt-4 text-sm text-gray-500 text-center">
-                    {avatarLoaded ? (
-                        <>Avatar loaded • T-Shirt GLB (Size {selectedSize})</>
+                    {avatarLoaded && clothingLoaded ? (
+                        <>{currentClothingItem.name} • Size {selectedSize}</>
                     ) : loadingError ? (
-                        "Avatar failed to load"
+                        "Failed to load content"
                     ) : (
-                        "Loading avatar model..."
+                        "Loading..."
                     )}
                 </div>
             </div>
