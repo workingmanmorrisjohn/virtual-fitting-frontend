@@ -5,19 +5,27 @@ import Spacer from "../components/core/Spacer";
 import { useNavigate } from "react-router";
 import { RoutePath } from "../enums/RoutePath";
 import { useState } from "react";
+import { useAddAvatar } from "../hooks/useAvatars"; // Import the hook
+import { blobToFile, resizeImage } from "../utils/UtilityFunctions";
 
 const AddAvatarPage: React.FC = () => {
     const navigate = useNavigate();
     const [frontImage, setFrontImage] = useState<string | null>(null);
     const [sideImage, setSideImage] = useState<string | null>(null);
+    const [frontFile, setFrontFile] = useState<File | null>(null);
+    const [sideFile, setSideFile] = useState<File | null>(null);
     const [height, setHeight] = useState<string>("");
+    
+    const addAvatarMutation = useAddAvatar();
 
     const handleImageUpload = (
         event: React.ChangeEvent<HTMLInputElement>, 
-        setImage: React.Dispatch<React.SetStateAction<string | null>>
+        setImage: React.Dispatch<React.SetStateAction<string | null>>,
+        setFile: React.Dispatch<React.SetStateAction<File | null>>
     ) => {
         const file = event.target.files?.[0];
         if (file) {
+            setFile(file); // Store the actual file
             const reader = new FileReader();
             reader.onload = (e: ProgressEvent<FileReader>) => {
                 if (e.target?.result) {
@@ -28,13 +36,35 @@ const AddAvatarPage: React.FC = () => {
         }
     };
 
-    const handleUpload = (): void => {
-        // Handle the upload logic here
-        console.log("Front Image:", frontImage);
-        console.log("Side Image:", sideImage);
-        console.log("Height:", height);
-        // Navigate back or show success message
-        navigate(RoutePath.HOME);
+    const handleUpload = async (): Promise<void> => {
+        if (!frontFile || !sideFile || !height.trim()) {
+            console.error("Missing required fields");
+            return;
+        }
+
+        try {
+            // Convert height string to number (you might want to add validation)
+            const heightNum = parseFloat(height);
+            if (isNaN(heightNum)) {
+                console.error("Invalid height value");
+                return;
+            }
+
+            const frontImageBlob = await resizeImage(frontFile, 500, 500);
+            const sideImageBlob = await resizeImage(sideFile, 500, 500);
+
+            await addAvatarMutation.mutateAsync({
+                frontView: blobToFile(frontImageBlob, frontFile.name),
+                sideView: blobToFile(sideImageBlob, sideFile.name),
+                height: heightNum
+            });
+
+            // Navigate back on success
+            navigate(RoutePath.HOME);
+        } catch (error) {
+            console.error("Upload failed:", error);
+            // You might want to show an error message to the user
+        }
     };
 
     return (
@@ -75,7 +105,9 @@ const AddAvatarPage: React.FC = () => {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e, setFrontImage)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                                handleImageUpload(e, setFrontImage, setFrontFile)
+                            }
                         />
                     </div>
 
@@ -104,7 +136,9 @@ const AddAvatarPage: React.FC = () => {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleImageUpload(e, setSideImage)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                                handleImageUpload(e, setSideImage, setSideFile)
+                            }
                         />
                     </div>
 
@@ -117,20 +151,29 @@ const AddAvatarPage: React.FC = () => {
                                 type="text"
                                 value={height}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeight(e.target.value)}
-                                placeholder="Enter height (e.g., 5'8 or 173cm)"
+                                placeholder="Enter height (e.g., 5.8 or 173)"
                                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                             />
                         </div>
                     </div>
 
+                    {/* Error Message */}
+                    {addAvatarMutation.isError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <p className="text-red-700">
+                                Upload failed. Please try again.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Upload Button */}
                     <div className="flex justify-end pt-6">
                         <button
                             onClick={handleUpload}
-                            disabled={!frontImage || !sideImage || !height.trim()}
+                            disabled={!frontFile || !sideFile || !height.trim() || addAvatarMutation.isPending}
                             className="px-8 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
-                            Upload
+                            {addAvatarMutation.isPending ? "Uploading..." : "Upload"}
                         </button>
                     </div>
                 </div>

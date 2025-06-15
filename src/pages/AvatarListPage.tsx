@@ -74,7 +74,7 @@ const AvatarListPage = () => {
 
             {/* Floating Action Button */}
             <div
-                className="absolute right-8 bottom-8 w-[50px] h-[50px] flex items-center justify-center rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
+                className="fixed right-8 bottom-24 w-[50px] h-[50px] flex items-center justify-center rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
                 onClick={() => navigate(RoutePath.ADD_AVATAR)}
             >
                 <Plus size={35} />

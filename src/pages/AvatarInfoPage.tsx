@@ -1,4 +1,4 @@
-import { ArrowLeft, User, Image, Ruler, CheckCircle, ImageIcon } from "lucide-react";
+import { ArrowLeft, User, Image, Ruler, ImageIcon } from "lucide-react";
 import Header from "../components/core/Header";
 import Page from "../components/core/Page";
 import Spacer from "../components/core/Spacer";
@@ -17,7 +17,7 @@ const AvatarInfoPage = () => {
 
     if (isLoading) return <p>Loading avatar...</p>;
     if (isError || !avatar) return <p>Avatar not found.</p>;
-    
+
     const front_view_image = getFileURLFromAvatar(avatar, avatar.front_view);
     const side_view_image = getFileURLFromAvatar(avatar, avatar.side_view);
     const avatar_file_path = getFileURLFromAvatar(avatar, avatar.unrigged_glb);
@@ -42,12 +42,27 @@ const AvatarInfoPage = () => {
                     <div className="flex items-center gap-3">
                         <User className="text-gray-700" size={20} />
                         <p className="text-gray-800 font-medium">
-                            ID: {avatar.id} 
+                            ID: {avatar.id}
                         </p>
                     </div>
                 </div>
 
-                <AvatarCanvas modelPath={avatar_file_path} />
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-300">
+                    <div className="flex items-center gap-3 mb-6">
+                        <User className="text-gray-700" size={20} />
+                        <h2 className="text-lg font-semibold text-gray-800">3D Avatar</h2>
+                    </div>
+
+                    {avatar_file_path ? <AvatarCanvas modelPath={avatar_file_path} /> : "Avatar not available"}
+
+
+                    {/* Instructions */}
+                    <div className="mt-3 text-xs text-gray-500 text-center">
+                        Click and drag to rotate • Scroll to zoom • Auto-rotates when idle
+                    </div>
+                </div>
+
+                
 
                 {/* Sources Section */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-300">
@@ -69,7 +84,7 @@ const AvatarInfoPage = () => {
 
                         <div className="group">
                             <div className="w-36 h-28 border-2 border-gray-300 rounded-xl bg-gray-100 flex items-center justify-center group-hover:shadow-md transition">
-                               {side_view_image ? <img
+                                {side_view_image ? <img
                                     src={side_view_image}
                                     alt={`Avatar ${avatar.id}`}
                                     className="w-full h-full object-cover"
@@ -90,8 +105,8 @@ const AvatarInfoPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
                             { label: "Height", value: avatar.height ? avatar.height : "--" },
-                            { label: "Shoulder Width", value: avatar.shoulder ? avatar.shoulder : "--"},
-                            { label: "Torso heigt", value: avatar.torso ? avatar.torso : "--"},
+                            { label: "Shoulder Width", value: avatar.shoulder ? avatar.shoulder : "--" },
+                            { label: "Torso heigt", value: avatar.torso ? avatar.torso : "--" },
                             { label: "Side Depth", value: avatar.side_depth ? avatar.side_depth : "--" }
                         ].map(({ label, value }) => (
                             <div key={label} className="bg-gray-100 rounded-xl p-4 border border-gray-200">
@@ -111,7 +126,7 @@ const AvatarInfoPage = () => {
                 <div className="flex justify-center pt-4">
                     <button
                         className="group relative px-12 py-4 bg-black text-white rounded-2xl font-semibold hover:bg-gray-900 transition-all duration-300 shadow hover:shadow-md transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        onClick={() => navigate(RoutePath.FITTING_ROOM)}
+                        onClick={() => navigate(`${RoutePath.FITTING_ROOM_BASE}/${avatar.id}`)}
                     >
                         <span className="flex items-center gap-3">
                             Go To Fitting Room

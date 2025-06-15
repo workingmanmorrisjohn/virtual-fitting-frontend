@@ -76,3 +76,7 @@ export const resizeImage = (file: File, maxWidth: number, maxHeight: number): Pr
       img.src = url;
   });
 };
+
+export function blobToFile(blob: Blob, fileName: string): File {
+  return new File([blob], fileName, { type: blob.type });
+}

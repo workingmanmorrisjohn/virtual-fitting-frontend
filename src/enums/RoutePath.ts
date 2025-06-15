@@ -10,7 +10,8 @@ enum RoutePath {
     CLOTHES_INFO_BASE = "/clothes-info",
     CLOTHES_LIST = "/clothes",
     PROFILE = "/profile",
-    FITTING_ROOM = "/fitting-room",
+    FITTING_ROOM = "/fitting-room/:id",
+    FITTING_ROOM_BASE = "/fitting-room"
 }
 
 export {RoutePath};

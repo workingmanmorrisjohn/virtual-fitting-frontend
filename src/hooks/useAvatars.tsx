@@ -1,8 +1,33 @@
 import PocketBase from 'pocketbase';
 import { usePocketBase } from '../context/PocketBaseContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { CollectionNames } from '../enums/CollectionNames';
 import type { Avatar } from '../types/Avatar';
+import { Endpoints } from '../enums/Endpoints';
+import { useEffect } from 'react';
+
+interface AddAvatarParams {
+    frontView: File;
+    sideView: File;
+    height: number;
+}
+
+const uploadAvatar = async ({ frontView, sideView, height }: AddAvatarParams): Promise<void> => {
+    const formData = new FormData();
+    formData.append('front_view', frontView);
+    formData.append('side_view', sideView);
+    formData.append('height', height.toString());
+
+    const response = await fetch(Endpoints.NEW_AVATAR, {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to upload avatar');
+    }
+};
 
 const fetch_avatars = async (
     pb: PocketBase,
@@ -64,24 +89,63 @@ const fetch_avatar_by_id = async (pb: PocketBase, id: string): Promise<Avatar | 
 
 export const useAvatars = (page: number, perPage: number) => {
     const pb = usePocketBase();
+    const queryClient = useQueryClient();
 
-    return useQuery({
+    const query = useQuery({
         queryKey: ['avatars', page, perPage],
         queryFn: () => fetch_avatars(pb, page, perPage),
-        placeholderData: (previousData) => previousData
+        placeholderData: (previousData) => previousData,
     });
+
+    useEffect(() => {
+        const handleChange = () => {
+            // Refetch the avatars list when any change occurs
+            queryClient.invalidateQueries({ queryKey: ['avatars', page, perPage] });
+        };
+
+        pb.collection(CollectionNames.AVATARS).subscribe('*', handleChange);
+
+        return () => {
+            pb.collection(CollectionNames.AVATARS).unsubscribe('*');
+        };
+    }, [pb, page, perPage, queryClient]);
+
+    return query;
 };
 
 export const useAvatar = (id: string | undefined) => {
     const pb = usePocketBase();
+    const queryClient = useQueryClient();
 
-    return useQuery({
+    const query = useQuery({
         queryKey: ['avatar', id],
         queryFn: () => {
             if (!id) return Promise.resolve(null);
             return fetch_avatar_by_id(pb, id);
         },
-        enabled: !!id, // only run query if id is truthy
+        enabled: !!id,
     });
+
+    useEffect(() => {
+        if (!id) return;
+
+        const handleChange = (e: any) => {
+            // Manually update the cache with the new record
+            queryClient.setQueryData(['avatar', id], e.record);
+        };
+
+        pb.collection(CollectionNames.AVATARS).subscribe(id, handleChange);
+
+        return () => {
+            pb.collection(CollectionNames.AVATARS).unsubscribe(id);
+        };
+    }, [pb, id, queryClient]);
+
+    return query;
 };
 
+export const useAddAvatar = () => {
+    return useMutation({
+        mutationFn: uploadAvatar,
+    });
+};
