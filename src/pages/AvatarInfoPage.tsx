@@ -23,7 +23,6 @@ const AvatarInfoPage = () => {
     const avatar_file_path = getFileURLFromAvatar(avatar, avatar.unrigged_glb);
 
 
-
     return (
         <Page>
             <Header>
@@ -50,7 +49,7 @@ const AvatarInfoPage = () => {
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-300">
                     <div className="flex items-center gap-3 mb-6">
                         <User className="text-gray-700" size={20} />
-                        <h2 className="text-lg font-semibold text-gray-800">3D Avatar</h2>
+                        <h2 className="text-lg font-semibold text-gray-800">3D Avatar (3D Scan)</h2>
                     </div>
 
                     {avatar_file_path ? <AvatarCanvas modelPath={avatar_file_path} /> : "Avatar not available"}
@@ -61,6 +60,7 @@ const AvatarInfoPage = () => {
                         Click and drag to rotate • Scroll to zoom • Auto-rotates when idle
                     </div>
                 </div>
+
 
                 
 

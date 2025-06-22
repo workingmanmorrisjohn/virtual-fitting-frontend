@@ -105,6 +105,7 @@ const AddAvatarPage: React.FC = () => {
                             type="file"
                             accept="image/*"
                             className="hidden"
+                             capture="environment"
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                                 handleImageUpload(e, setFrontImage, setFrontFile)
                             }
@@ -136,6 +137,7 @@ const AddAvatarPage: React.FC = () => {
                             type="file"
                             accept="image/*"
                             className="hidden"
+                            capture="environment"
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                                 handleImageUpload(e, setSideImage, setSideFile)
                             }

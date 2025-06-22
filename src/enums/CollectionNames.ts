@@ -22,4 +22,6 @@ export enum CollectionNames {
     POSTS = "Posts",
     AVATARS = "Avatars",
     CLOTHES = "Clothes",
+    CLOTHES_SMPL ="SMPL_Clothes",
+    USERS = "users"
 }

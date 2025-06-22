@@ -1,3 +1,5 @@
+import type { Avatar } from "primereact/avatar";
+
 export type ClothesSize = {
     id: string;
     collectionId: string;
@@ -22,3 +24,28 @@ export type Clothes = {
     created: string;
     updated: string;
 };
+
+
+export type SMPL_Clothes = {
+    id: string;
+    collectionId: string;
+    collectionName: string;
+    avatar: Avatar;
+    clothes_thumbnail: ClothesThumbnail;
+    type: ClothesType;
+    model_glb: string
+}
+
+export enum ClothesType {
+    TOP = "Top",
+    BOTTOM = "Bottom"
+}
+
+
+export type ClothesThumbnail = {
+    id: string;
+    collectionId: string;
+    collectionName: string;
+    image: string;
+    model:string
+}

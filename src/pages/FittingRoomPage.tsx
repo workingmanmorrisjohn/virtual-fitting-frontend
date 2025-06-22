@@ -47,7 +47,7 @@ const FittingRoomPage: React.FC = () => {
                     </div>
 
                     {/* Size selection */}
-                    <SizeSelector />
+                    {id && <SizeSelector avatarId={id} />}
                 </div>
             </Page>
         </FittingRoomProvider>

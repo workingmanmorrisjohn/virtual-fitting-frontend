@@ -1,4 +1,4 @@
-import React, { Suspense, useRef } from 'react'
+import React, { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Html, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -9,9 +9,6 @@ interface AvatarCanvasProps {
 }
 
 const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ modelPath }) => {
-
-  const containerRef = useRef<HTMLDivElement>(null)
-
   return (
     <>
       <Canvas

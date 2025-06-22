@@ -5,23 +5,20 @@ interface AvatarObjectProps {
   modelPath: string
 }
 
-const AvatarObject = ({modelPath} : AvatarObjectProps) => {
-    const { nodes, materials } = useGLTF(modelPath);
-    useGLTF.preload(modelPath);
+const AvatarObject = ({ modelPath }: AvatarObjectProps) => {
+  const { nodes } = useGLTF(modelPath)
+  useGLTF.preload(modelPath);
 
-    const mesh = nodes.mesh as Mesh;
-
-    return (
-        <group dispose={null}>
-          <mesh
-            castShadow
-            receiveShadow
-            geometry={mesh.geometry}
-            material={materials.mat0}
-            rotation={[Math.PI / 2, 0, 0]}
-          />
-        </group>
-    )
+  return (
+    <group>
+      {Object.entries(nodes).map(([key, node]) => {
+        if (node instanceof Mesh) {
+          return <primitive key={key} object={node} />;
+        }
+        return null;
+      })}
+    </group>
+  );
 }
 
 export default AvatarObject;
