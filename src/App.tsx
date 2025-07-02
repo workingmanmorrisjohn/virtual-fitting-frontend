@@ -15,6 +15,7 @@ import AddAvatarPage from './pages/AddAvatarPage';
 import AvatarInfoPage from './pages/AvatarInfoPage';
 import ClothesInfoPage from './pages/ClothesInfoPage';
 import FittingRoomPage from './pages/FittingRoomPage';
+import DataPrivacyPage from './pages/DataPrivacyPage';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ function App() {
                       <Route path={RoutePath.AVATAR_INFO} element={<AvatarInfoPage />} />
                       <Route path={RoutePath.CLOTHES_INFO} element={<ClothesInfoPage />} />
                       <Route path={RoutePath.FITTING_ROOM} element={<FittingRoomPage />} />
+                      <Route path={RoutePath.DATA_PRIVACY} element={<DataPrivacyPage />} />
 
                     </Route>
                     <Route path={RoutePath.LOGIN} element={<LoginPage />} />

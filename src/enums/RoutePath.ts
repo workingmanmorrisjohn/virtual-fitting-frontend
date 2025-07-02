@@ -11,7 +11,8 @@ enum RoutePath {
     CLOTHES_LIST = "/clothes",
     PROFILE = "/profile",
     FITTING_ROOM = "/fitting-room/:id",
-    FITTING_ROOM_BASE = "/fitting-room"
+    FITTING_ROOM_BASE = "/fitting-room",
+    DATA_PRIVACY = "/data-privacy"
 }
 
 export {RoutePath};

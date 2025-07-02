@@ -35,7 +35,7 @@ const SizeSelector = ({ avatarId }: SizeSelectorProps) => {
                 </div>
             </div>
 
-            <div className="mt-6">
+            {/* <div className="mt-6">
                 <h3 className="text-lg font-medium mb-3">Bottoms</h3>
                 {isLoading && <div className="text-center mt-4">Loading bottoms...</div>}
                 {!isLoading && data?.bottom.length === 0 && (
@@ -46,7 +46,7 @@ const SizeSelector = ({ avatarId }: SizeSelectorProps) => {
                         <ClotheSelectorItem key={clothes.id} clothes={clothes} />
                     ))}
                 </div>
-            </div>
+            </div> */}
         </>
     );
 };
