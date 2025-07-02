@@ -107,7 +107,7 @@ const AvatarInfoPage = () => {
                             { label: "Height", value: avatar.height ? avatar.height : "--" },
                             { label: "Shoulder Width", value: avatar.shoulder ? avatar.shoulder : "--" },
                             { label: "Torso heigt", value: avatar.torso ? avatar.torso : "--" },
-                            { label: "Side Depth", value: avatar.side_depth ? avatar.side_depth : "--" }
+                            { label: "Waist", value: avatar.side_depth ? avatar.side_depth : "--" }
                         ].map(({ label, value }) => (
                             <div key={label} className="bg-gray-100 rounded-xl p-4 border border-gray-200">
                                 <p className="text-sm text-gray-600 mb-1">{label}</p>

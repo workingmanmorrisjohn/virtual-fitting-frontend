@@ -5,8 +5,10 @@ import Spacer from "../components/core/Spacer";
 import { useNavigate } from "react-router";
 import { RoutePath } from "../enums/RoutePath";
 import { useState } from "react";
-import { useAddAvatar } from "../hooks/useAvatars"; // Import the hook
+import { useAddAvatar } from "../hooks/useAvatars";
 import { blobToFile, resizeImage } from "../utils/UtilityFunctions";
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 
 const AddAvatarPage: React.FC = () => {
     const navigate = useNavigate();
@@ -18,21 +20,121 @@ const AddAvatarPage: React.FC = () => {
     
     const addAvatarMutation = useAddAvatar();
 
-    const handleImageUpload = (
-        event: React.ChangeEvent<HTMLInputElement>, 
+    // Convert base64 to File object
+    const base64ToFile = (base64: string, filename: string): File => {
+        const arr = base64.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, { type: mime });
+    };
+
+    // Handle image selection with action sheet (Camera/Gallery choice)
+    const selectImage = async (
         setImage: React.Dispatch<React.SetStateAction<string | null>>,
-        setFile: React.Dispatch<React.SetStateAction<File | null>>
+        setFile: React.Dispatch<React.SetStateAction<File | null>>,
+        filename: string
     ) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setFile(file); // Store the actual file
-            const reader = new FileReader();
-            reader.onload = (e: ProgressEvent<FileReader>) => {
-                if (e.target?.result) {
-                    setImage(e.target.result as string);
+        try {
+            if (Capacitor.isNativePlatform()) {
+                // Use Capacitor Camera for native platforms
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false,
+                    resultType: CameraResultType.DataUrl,
+                    source: CameraSource.Prompt, // Shows selection dialog
+                });
+
+                if (image.dataUrl) {
+                    setImage(image.dataUrl);
+                    const file = base64ToFile(image.dataUrl, filename);
+                    setFile(file);
                 }
-            };
-            reader.readAsDataURL(file);
+            } else {
+                // Fallback for web - trigger file input
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    const file = target.files?.[0];
+                    if (file) {
+                        setFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (event: ProgressEvent<FileReader>) => {
+                            if (event.target?.result) {
+                                setImage(event.target.result as string);
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                };
+                input.click();
+            }
+        } catch (error) {
+            console.error('Error selecting image:', error);
+        }
+    };
+
+    // Handle direct camera capture
+    const takePhoto = async (
+        setImage: React.Dispatch<React.SetStateAction<string | null>>,
+        setFile: React.Dispatch<React.SetStateAction<File | null>>,
+        filename: string
+    ) => {
+        try {
+            if (Capacitor.isNativePlatform()) {
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false,
+                    resultType: CameraResultType.DataUrl,
+                    source: CameraSource.Camera, // Direct camera
+                });
+
+                if (image.dataUrl) {
+                    setImage(image.dataUrl);
+                    const file = base64ToFile(image.dataUrl, filename);
+                    setFile(file);
+                }
+            } else {
+                // Fallback for web
+                selectImage(setImage, setFile, filename);
+            }
+        } catch (error) {
+            console.error('Error taking photo:', error);
+        }
+    };
+
+    // Handle gallery selection
+    const selectFromGallery = async (
+        setImage: React.Dispatch<React.SetStateAction<string | null>>,
+        setFile: React.Dispatch<React.SetStateAction<File | null>>,
+        filename: string
+    ) => {
+        try {
+            if (Capacitor.isNativePlatform()) {
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false,
+                    resultType: CameraResultType.DataUrl,
+                    source: CameraSource.Photos, // Direct gallery
+                });
+
+                if (image.dataUrl) {
+                    setImage(image.dataUrl);
+                    const file = base64ToFile(image.dataUrl, filename);
+                    setFile(file);
+                }
+            } else {
+                // Fallback for web
+                selectImage(setImage, setFile, filename);
+            }
+        } catch (error) {
+            console.error('Error selecting from gallery:', error);
         }
     };
 
@@ -43,7 +145,6 @@ const AddAvatarPage: React.FC = () => {
         }
 
         try {
-            // Convert height string to number (you might want to add validation)
             const heightNum = parseFloat(height);
             if (isNaN(heightNum)) {
                 console.error("Invalid height value");
@@ -59,13 +160,13 @@ const AddAvatarPage: React.FC = () => {
                 height: heightNum
             });
 
-            // Navigate back on success
             navigate(RoutePath.HOME);
         } catch (error) {
             console.error("Upload failed:", error);
-            // You might want to show an error message to the user
         }
     };
+
+    const isNative = Capacitor.isNativePlatform();
 
     return (
         <>
@@ -85,7 +186,7 @@ const AddAvatarPage: React.FC = () => {
                         <h2 className="text-lg font-medium mb-4">Front View</h2>
                         <div 
                             className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-100 transition-colors"
-                            onClick={() => document.getElementById('front-upload')?.click()}
+                            onClick={() => selectImage(setFrontImage, setFrontFile, 'front-view.jpg')}
                         >
                             {frontImage ? (
                                 <img 
@@ -97,19 +198,30 @@ const AddAvatarPage: React.FC = () => {
                                 <>
                                     <div className="text-6xl text-gray-400 mb-2">+</div>
                                     <p className="text-gray-500">Click to upload front view image</p>
+                                    {isNative && (
+                                        <p className="text-xs text-gray-400 mt-1">Choose Camera or Gallery</p>
+                                    )}
                                 </>
                             )}
                         </div>
-                        <input
-                            id="front-upload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                             capture="environment"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                                handleImageUpload(e, setFrontImage, setFrontFile)
-                            }
-                        />
+                        
+                        {/* Additional buttons for native platforms */}
+                        {isNative && (
+                            <div className="flex gap-2 mt-2">
+                                <button
+                                    onClick={() => takePhoto(setFrontImage, setFrontFile, 'front-view.jpg')}
+                                    className="flex-1 py-2 px-4 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
+                                >
+                                    Camera
+                                </button>
+                                <button
+                                    onClick={() => selectFromGallery(setFrontImage, setFrontFile, 'front-view.jpg')}
+                                    className="flex-1 py-2 px-4 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                                >
+                                    Gallery
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Side View Section */}
@@ -117,7 +229,7 @@ const AddAvatarPage: React.FC = () => {
                         <h2 className="text-lg font-medium mb-4">Side View</h2>
                         <div 
                             className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-100 transition-colors"
-                            onClick={() => document.getElementById('side-upload')?.click()}
+                            onClick={() => selectImage(setSideImage, setSideFile, 'side-view.jpg')}
                         >
                             {sideImage ? (
                                 <img 
@@ -129,19 +241,30 @@ const AddAvatarPage: React.FC = () => {
                                 <>
                                     <div className="text-6xl text-gray-400 mb-2">+</div>
                                     <p className="text-gray-500">Click to upload side view image</p>
+                                    {isNative && (
+                                        <p className="text-xs text-gray-400 mt-1">Choose Camera or Gallery</p>
+                                    )}
                                 </>
                             )}
                         </div>
-                        <input
-                            id="side-upload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            capture="environment"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                                handleImageUpload(e, setSideImage, setSideFile)
-                            }
-                        />
+                        
+                        {/* Additional buttons for native platforms */}
+                        {isNative && (
+                            <div className="flex gap-2 mt-2">
+                                <button
+                                    onClick={() => takePhoto(setSideImage, setSideFile, 'side-view.jpg')}
+                                    className="flex-1 py-2 px-4 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
+                                >
+                                    Camera
+                                </button>
+                                <button
+                                    onClick={() => selectFromGallery(setSideImage, setSideFile, 'side-view.jpg')}
+                                    className="flex-1 py-2 px-4 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                                >
+                                    Gallery
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Height Input Section */}
@@ -153,7 +276,7 @@ const AddAvatarPage: React.FC = () => {
                                 type="text"
                                 value={height}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeight(e.target.value)}
-                                placeholder="Enter height (e.g., 5.8 or 173)"
+                                placeholder="Enter height in cm"
                                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                             />
                         </div>
