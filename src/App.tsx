@@ -41,10 +41,11 @@ function App() {
                       <Route path={RoutePath.AVATAR_INFO} element={<AvatarInfoPage />} />
                       <Route path={RoutePath.CLOTHES_INFO} element={<ClothesInfoPage />} />
                       <Route path={RoutePath.FITTING_ROOM} element={<FittingRoomPage />} />
-                      <Route path={RoutePath.DATA_PRIVACY} element={<DataPrivacyPage />} />
+                      
 
                     </Route>
                     <Route path={RoutePath.LOGIN} element={<LoginPage />} />
+                    <Route path={RoutePath.DATA_PRIVACY} element={<DataPrivacyPage />} />
                   </Routes>
                 </Router>
               </PostProvider>

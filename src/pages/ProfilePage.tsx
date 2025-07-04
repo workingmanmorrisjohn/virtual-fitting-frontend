@@ -1,28 +1,18 @@
-import { LogOutIcon, User as UserIcon } from "lucide-react";
+import { LogOutIcon, User as UserIcon, ShieldCheck } from "lucide-react";
 import Header from "../components/core/Header";
 import Page from "../components/core/Page";
 import Spacer from "../components/core/Spacer";
 import { useAuth } from "../context/AuthContext";
 import { useUser } from "../hooks/useUser";
 import { useRef } from "react";
+import { useNavigate } from "react-router";
+import { RoutePath } from "../enums/RoutePath"; // Make sure this has the DATA_PRIVACY route
 
 const ProfilePage = () => {
     const { logout } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { data: user, isLoading } = useUser();
-    // const { mutate: updateUser } = useUpdateUser();
-
-    // const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //     const file = e.target.files?.[0];
-    //     if (file) {
-    //         try {
-    //             updateUser({ data: { avatar: file } });
-    //         } catch (err) {
-    //             console.error("Avatar upload failed:", err);
-    //             alert("Failed to upload avatar.");
-    //         }
-    //     }
-    // };
+    const navigate = useNavigate();
 
     if (isLoading || !user) {
         return (
@@ -92,6 +82,14 @@ const ProfilePage = () => {
 
                     <button className="w-full bg-black text-white py-2 rounded-md font-semibold hover:bg-gray-900 transition">
                         EDIT
+                    </button>
+
+                    <button
+                        className="mt-3 w-full border border-gray-300 text-gray-700 py-2 rounded-md font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2"
+                        onClick={() => navigate(RoutePath.DATA_PRIVACY)}
+                    >
+                        <ShieldCheck size={18} />
+                        Data Privacy
                     </button>
                 </div>
             </div>

@@ -48,6 +48,17 @@ const FittingRoomPage: React.FC = () => {
 
                     {/* Size selection */}
                     {id && <SizeSelector avatarId={id} />}
+
+                    <div className="bg-white border border-gray-300 shadow-sm rounded-2xl p-6 mt-6 max-w-md mx-auto">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-2">Recommended Size</h2>
+                        <p className="text-3xl font-bold text-black text-center">
+                            {avatar.size_reco ? avatar.size_reco : "--"}
+                        </p>
+                        <p className="text-sm text-gray-500 text-center mt-2">
+                            Based on your body proportions and selected clothing
+                        </p>
+                    </div>
+
                 </div>
             </Page>
         </FittingRoomProvider>

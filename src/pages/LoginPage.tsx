@@ -98,72 +98,80 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <div className="card w-96 bg-white shadow-xl">
-        <div className="card-body">
-          <h1 className="text-2xl font-bold text-center">Virtual Fitting System</h1>
+  <div className="card w-96 bg-white shadow-xl">
+    <div className="card-body">
+      <h1 className="text-2xl font-bold text-center">Virtual Fitting System</h1>
 
-          {!mfaRequired ? (
-            <form onSubmit={handleSubmit} className="form-control">
-              <label className="label">
-                <span className="label-text">Email</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Email"
-                className="input input-bordered"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-              <label className="label">
-                <span className="label-text">Password</span>
-              </label>
-              <input
-                type="password"
-                placeholder="Password"
-                className="input input-bordered"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <h2 className="text-sm text-red-600 mt-4">{errorMessage}</h2>
+      {!mfaRequired ? (
+        <form onSubmit={handleSubmit} className="form-control">
+          <label className="label">
+            <span className="label-text">Email</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Email"
+            className="input input-bordered"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <label className="label">
+            <span className="label-text">Password</span>
+          </label>
+          <input
+            type="password"
+            placeholder="Password"
+            className="input input-bordered"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <h2 className="text-sm text-red-600 mt-4">{errorMessage}</h2>
 
-              {/* <h2 className='cursor-pointer text-black' onClick={() => {navigate(RoutePath.RESET_PASS)}}> Forgot your password?</h2> */}
-              <button className="btn btn-neutral mt-4" type="submit">
-                {isLoading ? <span className="loading loading-spinner loading-sm"></span> : 'Login'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleOtpSubmit} className="form-control">
-              <label className="label">
-                <span className="label-text">Enter OTP</span>
-              </label>
-              <input
-                type="text"
-                placeholder="OTP Code"
-                className="input input-bordered"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                required
-              />
-              <h2 className="text-sm text-red-600 mt-4">{errorMessage}</h2>
-              <button className="btn btn-neutral mt-4" type="submit">
-                {isLoading ? <span className="loading loading-spinner loading-sm"></span> : 'Verify OTP'}
-              </button>
-              
-              {/* Resend OTP button with countdown */}
-              <button
-                className={`btn btn-outline mt-2 ${!canResend ? 'btn-disabled' : ''}`}
-                onClick={handleResendOtp}
-                disabled={!canResend}
-              >
-                {canResend ? 'Resend OTP' : `Resend OTP in ${resendTimer}s`}
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
+          <button className="btn btn-neutral mt-4" type="submit">
+            {isLoading ? <span className="loading loading-spinner loading-sm"></span> : 'Login'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleOtpSubmit} className="form-control">
+          <label className="label">
+            <span className="label-text">Enter OTP</span>
+          </label>
+          <input
+            type="text"
+            placeholder="OTP Code"
+            className="input input-bordered"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            required
+          />
+          <h2 className="text-sm text-red-600 mt-4">{errorMessage}</h2>
+          <button className="btn btn-neutral mt-4" type="submit">
+            {isLoading ? <span className="loading loading-spinner loading-sm"></span> : 'Verify OTP'}
+          </button>
+
+          <button
+            className={`btn btn-outline mt-2 ${!canResend ? 'btn-disabled' : ''}`}
+            onClick={handleResendOtp}
+            disabled={!canResend}
+          >
+            {canResend ? 'Resend OTP' : `Resend OTP in ${resendTimer}s`}
+          </button>
+        </form>
+      )}
+
+      {/* Data Privacy Button */}
+      <button
+        className="btn btn-link text-sm text-center text-gray-600 mt-6 hover:underline"
+        onClick={() => navigate(RoutePath.DATA_PRIVACY)}
+        type="button"
+      >
+        View Data Privacy Policy
+      </button>
     </div>
+  </div>
+</div>
+
   );
 };
 

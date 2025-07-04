@@ -10,14 +10,18 @@ import { useEffect } from 'react';
 interface AddAvatarParams {
     frontView: File;
     sideView: File;
+    backView: File;
     height: number;
+    gender: string;
 }
 
-const uploadAvatar = async ({ frontView, sideView, height }: AddAvatarParams): Promise<void> => {
+const uploadAvatar = async ({ frontView, sideView, backView, height, gender }: AddAvatarParams): Promise<void> => {
     const formData = new FormData();
     formData.append('front_view', frontView);
     formData.append('side_view', sideView);
+    formData.append('back_view', backView);
     formData.append('height', height.toString());
+    formData.append('gender', gender);
 
     const response = await fetch(Endpoints.NEW_AVATAR, {
         method: 'POST',
@@ -45,6 +49,9 @@ const fetch_avatars = async (
             collectionName: record.collectionName,
             front_view: record.front_view,
             side_view: record.side_view,
+            back_view: record.back_view,
+            gender: record.gender,
+            size_reco: record.size_reco,
             height: record.height,
             shoulder: record.shoulder,
             torso: record.torso,
@@ -70,6 +77,9 @@ const fetch_avatar_by_id = async (pb: PocketBase, id: string): Promise<Avatar | 
             collectionName: record.collectionName,
             front_view: record.front_view,
             side_view: record.side_view,
+            back_view: record.back_view,
+            gender: record.gender,
+            size_reco: record.size_reco,
             height: record.height,
             shoulder: record.shoulder,
             torso: record.torso,

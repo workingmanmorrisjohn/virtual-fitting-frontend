@@ -6,7 +6,10 @@ export interface Avatar {
     collectionName: string
     front_view: string
     side_view: string
+    back_view: string
     height: number
+    gender: string
+    size_reco: string
     shoulder: number
     torso: number
     side_depth: number

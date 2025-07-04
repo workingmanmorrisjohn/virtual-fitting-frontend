@@ -7,8 +7,7 @@ import { RoutePath } from "../enums/RoutePath";
 import { useState } from "react";
 import { useAddAvatar } from "../hooks/useAvatars";
 import { blobToFile, resizeImage } from "../utils/UtilityFunctions";
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Capacitor } from '@capacitor/core';
+import ImageSelector from "../components/avatar/ImageSelector";
 
 const AddAvatarPage: React.FC = () => {
     const navigate = useNavigate();
@@ -17,132 +16,20 @@ const AddAvatarPage: React.FC = () => {
     const [frontFile, setFrontFile] = useState<File | null>(null);
     const [sideFile, setSideFile] = useState<File | null>(null);
     const [height, setHeight] = useState<string>("");
-    
+
+    const [backImage, setBackImage] = useState<string | null>(null);
+    const [backFile, setBackFile] = useState<File | null>(null);
+    const [gender, setGender] = useState<string>("");
+
     const addAvatarMutation = useAddAvatar();
 
-    // Convert base64 to File object
-    const base64ToFile = (base64: string, filename: string): File => {
-        const arr = base64.split(',');
-        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-            u8arr[n] = bstr.charCodeAt(n);
-        }
-        return new File([u8arr], filename, { type: mime });
-    };
-
-    // Handle image selection with action sheet (Camera/Gallery choice)
-    const selectImage = async (
-        setImage: React.Dispatch<React.SetStateAction<string | null>>,
-        setFile: React.Dispatch<React.SetStateAction<File | null>>,
-        filename: string
-    ) => {
-        try {
-            if (Capacitor.isNativePlatform()) {
-                // Use Capacitor Camera for native platforms
-                const image = await Camera.getPhoto({
-                    quality: 90,
-                    allowEditing: false,
-                    resultType: CameraResultType.DataUrl,
-                    source: CameraSource.Prompt, // Shows selection dialog
-                });
-
-                if (image.dataUrl) {
-                    setImage(image.dataUrl);
-                    const file = base64ToFile(image.dataUrl, filename);
-                    setFile(file);
-                }
-            } else {
-                // Fallback for web - trigger file input
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = (e: Event) => {
-                    const target = e.target as HTMLInputElement;
-                    const file = target.files?.[0];
-                    if (file) {
-                        setFile(file);
-                        const reader = new FileReader();
-                        reader.onload = (event: ProgressEvent<FileReader>) => {
-                            if (event.target?.result) {
-                                setImage(event.target.result as string);
-                            }
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                };
-                input.click();
-            }
-        } catch (error) {
-            console.error('Error selecting image:', error);
-        }
-    };
-
-    // Handle direct camera capture
-    const takePhoto = async (
-        setImage: React.Dispatch<React.SetStateAction<string | null>>,
-        setFile: React.Dispatch<React.SetStateAction<File | null>>,
-        filename: string
-    ) => {
-        try {
-            if (Capacitor.isNativePlatform()) {
-                const image = await Camera.getPhoto({
-                    quality: 90,
-                    allowEditing: false,
-                    resultType: CameraResultType.DataUrl,
-                    source: CameraSource.Camera, // Direct camera
-                });
-
-                if (image.dataUrl) {
-                    setImage(image.dataUrl);
-                    const file = base64ToFile(image.dataUrl, filename);
-                    setFile(file);
-                }
-            } else {
-                // Fallback for web
-                selectImage(setImage, setFile, filename);
-            }
-        } catch (error) {
-            console.error('Error taking photo:', error);
-        }
-    };
-
-    // Handle gallery selection
-    const selectFromGallery = async (
-        setImage: React.Dispatch<React.SetStateAction<string | null>>,
-        setFile: React.Dispatch<React.SetStateAction<File | null>>,
-        filename: string
-    ) => {
-        try {
-            if (Capacitor.isNativePlatform()) {
-                const image = await Camera.getPhoto({
-                    quality: 90,
-                    allowEditing: false,
-                    resultType: CameraResultType.DataUrl,
-                    source: CameraSource.Photos, // Direct gallery
-                });
-
-                if (image.dataUrl) {
-                    setImage(image.dataUrl);
-                    const file = base64ToFile(image.dataUrl, filename);
-                    setFile(file);
-                }
-            } else {
-                // Fallback for web
-                selectImage(setImage, setFile, filename);
-            }
-        } catch (error) {
-            console.error('Error selecting from gallery:', error);
-        }
-    };
 
     const handleUpload = async (): Promise<void> => {
-        if (!frontFile || !sideFile || !height.trim()) {
+        if (!frontFile || !sideFile || !backFile || !height.trim() || !gender) {
             console.error("Missing required fields");
             return;
         }
+
 
         try {
             const heightNum = parseFloat(height);
@@ -153,11 +40,14 @@ const AddAvatarPage: React.FC = () => {
 
             const frontImageBlob = await resizeImage(frontFile, 500, 500);
             const sideImageBlob = await resizeImage(sideFile, 500, 500);
+            const backImageBlob = await resizeImage(backFile, 500, 500);
 
             await addAvatarMutation.mutateAsync({
                 frontView: blobToFile(frontImageBlob, frontFile.name),
                 sideView: blobToFile(sideImageBlob, sideFile.name),
-                height: heightNum
+                backView: blobToFile(backImageBlob, backFile.name),
+                height: heightNum,
+                gender: gender
             });
 
             navigate(RoutePath.HOME);
@@ -166,106 +56,25 @@ const AddAvatarPage: React.FC = () => {
         }
     };
 
-    const isNative = Capacitor.isNativePlatform();
 
     return (
         <>
             <Page>
                 <Header>
-                    <ArrowLeft 
-                        className="absolute left-8 cursor-pointer hover:text-gray-600 transition-colors" 
-                        onClick={() => navigate(RoutePath.HOME)} 
+                    <ArrowLeft
+                        className="absolute left-8 cursor-pointer hover:text-gray-600 transition-colors"
+                        onClick={() => navigate(RoutePath.HOME)}
                     />
                     <h1 className="text-xl font-semibold">Add Avatar</h1>
                 </Header>
                 <Spacer />
-                
-                <div className="w-full max-w-2xl mx-auto space-y-8">
-                    {/* Front View Section */}
-                    <div>
-                        <h2 className="text-lg font-medium mb-4">Front View</h2>
-                        <div 
-                            className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-100 transition-colors"
-                            onClick={() => selectImage(setFrontImage, setFrontFile, 'front-view.jpg')}
-                        >
-                            {frontImage ? (
-                                <img 
-                                    src={frontImage} 
-                                    alt="Front view" 
-                                    className="max-w-full max-h-full object-contain rounded-lg"
-                                />
-                            ) : (
-                                <>
-                                    <div className="text-6xl text-gray-400 mb-2">+</div>
-                                    <p className="text-gray-500">Click to upload front view image</p>
-                                    {isNative && (
-                                        <p className="text-xs text-gray-400 mt-1">Choose Camera or Gallery</p>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                        
-                        {/* Additional buttons for native platforms */}
-                        {isNative && (
-                            <div className="flex gap-2 mt-2">
-                                <button
-                                    onClick={() => takePhoto(setFrontImage, setFrontFile, 'front-view.jpg')}
-                                    className="flex-1 py-2 px-4 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
-                                >
-                                    Camera
-                                </button>
-                                <button
-                                    onClick={() => selectFromGallery(setFrontImage, setFrontFile, 'front-view.jpg')}
-                                    className="flex-1 py-2 px-4 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
-                                >
-                                    Gallery
-                                </button>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* Side View Section */}
-                    <div>
-                        <h2 className="text-lg font-medium mb-4">Side View</h2>
-                        <div 
-                            className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-100 transition-colors"
-                            onClick={() => selectImage(setSideImage, setSideFile, 'side-view.jpg')}
-                        >
-                            {sideImage ? (
-                                <img 
-                                    src={sideImage} 
-                                    alt="Side view" 
-                                    className="max-w-full max-h-full object-contain rounded-lg"
-                                />
-                            ) : (
-                                <>
-                                    <div className="text-6xl text-gray-400 mb-2">+</div>
-                                    <p className="text-gray-500">Click to upload side view image</p>
-                                    {isNative && (
-                                        <p className="text-xs text-gray-400 mt-1">Choose Camera or Gallery</p>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                        
-                        {/* Additional buttons for native platforms */}
-                        {isNative && (
-                            <div className="flex gap-2 mt-2">
-                                <button
-                                    onClick={() => takePhoto(setSideImage, setSideFile, 'side-view.jpg')}
-                                    className="flex-1 py-2 px-4 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
-                                >
-                                    Camera
-                                </button>
-                                <button
-                                    onClick={() => selectFromGallery(setSideImage, setSideFile, 'side-view.jpg')}
-                                    className="flex-1 py-2 px-4 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
-                                >
-                                    Gallery
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                <div className="w-full max-w-2xl mx-auto space-y-8">
+                    
+                    <ImageSelector header="Front View" image={frontImage} setImage={setFrontImage} setFile={setFrontFile} />
+                    <ImageSelector header="Side View" image={sideImage} setImage={setSideImage} setFile={setSideFile} />
+                    <ImageSelector header="Back View" image={backImage} setImage={setBackImage} setFile={setBackFile} />
+
 
                     {/* Height Input Section */}
                     <div>
@@ -280,6 +89,20 @@ const AddAvatarPage: React.FC = () => {
                                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                             />
                         </div>
+                    </div>
+
+                    <div className="w-full flex align-middle items-center gap-4">
+                        <label htmlFor="gender" className="text-lg font-medium">Gender:</label>
+                        <select
+                            id="gender"
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value)}
+                            className="select border border-gray-300 rounded-lg px-4 py-2"
+                        >
+                            <option value="" disabled>Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
                     </div>
 
                     {/* Error Message */}
