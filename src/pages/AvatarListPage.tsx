@@ -10,6 +10,7 @@ import Page from "../components/core/Page";
 import Spacer from "../components/core/Spacer";
 import { useAvatars } from "../hooks/useAvatars";
 import AvatarListItem from "../components/avatar/AvatarListItem";
+import DataPrivacyAcceptanceModal from "../components/data-privacy/DataPrivacyAcceptanceModal";
 
 const AvatarListPage = () => {
     const { logout } = useAuth();
@@ -79,6 +80,8 @@ const AvatarListPage = () => {
             >
                 <Plus size={35} />
             </div>
+
+            <DataPrivacyAcceptanceModal />
         </Page>
     );
 };

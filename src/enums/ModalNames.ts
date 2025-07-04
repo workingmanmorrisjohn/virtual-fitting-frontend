@@ -1,3 +1,4 @@
 export enum ModalNames {
-    ADD_POST = "add_post_modal"
+    IMAGE_PREVIEW_MODAL = "image_preview",
+    DATA_PRIVACY_ACCEPTANCE = "data_privacy"
 }

@@ -1,12 +1,30 @@
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Trash2 } from "lucide-react";
 import Header from "../components/core/Header";
 import Page from "../components/core/Page";
 import Spacer from "../components/core/Spacer";
 import { useNavigate } from "react-router";
 import { RoutePath } from "../enums/RoutePath";
+import { useAcceptedDataPrivacy } from "../hooks/useDataPrivacy";
 
 const DataPrivacyPage: React.FC = () => {
     const navigate = useNavigate();
+
+    const { accepted, loading, actionLoading, deleteAcceptance } = useAcceptedDataPrivacy();
+
+    const handleDeleteAcceptance = async () => {
+        // Show confirmation dialog
+        const confirmed = window.confirm(
+            "Are you sure you want to revoke your data privacy acceptance? This will log you out and you'll need to accept again to use the app."
+        );
+        
+        if (confirmed) {
+            const success = await deleteAcceptance();
+            if (success) {
+                // Optionally redirect to login or home page after deletion
+                navigate(RoutePath.LOGIN); // or wherever you want to redirect
+            }
+        }
+    };
 
     return (
         <Page>
@@ -18,6 +36,7 @@ const DataPrivacyPage: React.FC = () => {
                 />
                 <h1 className="text-xl font-semibold">Privacy & Data Use Policy</h1>
             </Header>
+
 
             <Spacer />
 
@@ -97,6 +116,49 @@ const DataPrivacyPage: React.FC = () => {
                 </div>
 
             </div>
+
+
+            <Spacer />
+
+            <div className="card bg-base-200 shadow-md mb-6">
+                    <div className="card-body">
+                        <div className="flex items-center gap-3">
+                            <ShieldCheck className="text-success" size={24} />
+                            <div>
+                                <h3 className="font-semibold">Privacy Status</h3>
+                                {loading ? (
+                                    <p className="text-sm text-gray-600">Loading...</p>
+                                ) : (
+                                    <p className="text-sm text-gray-600">
+                                        {accepted ? "You have accepted our data privacy policy" : "Data privacy not accepted"}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        
+                        {!loading && accepted && (
+                            <div className="card-actions justify-end mt-4">
+                                <button 
+                                    className="btn btn-outline btn-error btn-sm"
+                                    onClick={handleDeleteAcceptance}
+                                    disabled={actionLoading}
+                                >
+                                    {actionLoading ? (
+                                        <>
+                                            <span className="loading loading-spinner loading-xs"></span>
+                                            Revoking...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 size={16} />
+                                            Revoke Acceptance
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
         </Page>
     );
 };

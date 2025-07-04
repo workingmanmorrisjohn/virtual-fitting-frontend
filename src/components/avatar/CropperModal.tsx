@@ -12,7 +12,7 @@ interface CropperModalProps {
 
 const CropperModal: React.FC<CropperModalProps> = ({ imageSrc, onCancel, onCropComplete }) => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
+  const [zoom, _setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const onCropCompleteInternal = useCallback((_: any, croppedAreaPixels: any) => {
@@ -23,6 +23,10 @@ const CropperModal: React.FC<CropperModalProps> = ({ imageSrc, onCancel, onCropC
     const { file, previewUrl } = await getCroppedImg(imageSrc, croppedAreaPixels, 'cropped.jpg', 370, 760);
     onCropComplete(file, previewUrl);
   };
+
+  const handleZoom = () => {
+    
+  }
 
   return (
     <Dialog open={true} onClose={onCancel} className="fixed inset-0 z-50 flex items-center justify-center">
@@ -35,7 +39,7 @@ const CropperModal: React.FC<CropperModalProps> = ({ imageSrc, onCancel, onCropC
             zoom={zoom}
             aspect={370 / 760}
             onCropChange={setCrop}
-            onZoomChange={setZoom}
+            onZoomChange={handleZoom}
             onCropComplete={onCropCompleteInternal}
           />
         </div>

@@ -6,14 +6,20 @@ import { useNavigate, useParams } from "react-router";
 import { RoutePath } from "../enums/RoutePath";
 import AvatarCanvas from "../components/avatar/AvatarCanvas";
 import { useAvatar } from "../hooks/useAvatars";
-import { getFileURLFromAvatar } from "../utils/UtilityFunctions";
+import { getFileURLFromAvatar, openModal } from "../utils/UtilityFunctions";
 import StatusSection from "../components/avatar/StatusSection";
+import ImagePreviewModal from "../components/avatar/ImagePreviewModal";
+import { useState } from "react";
+import { ModalNames } from "../enums/ModalNames";
 
 const AvatarInfoPage = () => {
     const navigate = useNavigate();
 
     const { id } = useParams<{ id: string }>();
     const { data: avatar, isLoading, isError } = useAvatar(id);
+
+
+    const [previewImage, setPreviewImage] = useState("");
 
     if (isLoading) return <p>Loading avatar...</p>;
     if (isError || !avatar) return <p>Avatar not found.</p>;
@@ -23,7 +29,12 @@ const AvatarInfoPage = () => {
     const back_view_image = getFileURLFromAvatar(avatar, avatar.back_view);
     const avatar_file_path = getFileURLFromAvatar(avatar, avatar.unrigged_glb);
 
-
+    const openImage = (imagePreview: string | null) => {
+        if (imagePreview) {
+            setPreviewImage(imagePreview);
+            openModal(ModalNames.IMAGE_PREVIEW_MODAL);
+        }
+    }
     return (
         <Page>
             <Header>
@@ -73,7 +84,7 @@ const AvatarInfoPage = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-6 justify-center">
                         
-                        <div className="group">
+                        <div className="group" onClick={() => openImage(front_view_image)}>
                             <div className="w-36 h-28 border-2 border-gray-300 rounded-xl bg-gray-100 flex items-center justify-center group-hover:shadow-md transition">
                                 {front_view_image ? <img
                                     src={front_view_image}
@@ -84,7 +95,7 @@ const AvatarInfoPage = () => {
                             <p className="text-xs text-gray-600 text-center mt-2">Front</p>
                         </div>
 
-                        <div className="group">
+                        <div className="group" onClick={() => openImage(side_view_image)}>
                             <div className="w-36 h-28 border-2 border-gray-300 rounded-xl bg-gray-100 flex items-center justify-center group-hover:shadow-md transition">
                                 {side_view_image ? <img
                                     src={side_view_image}
@@ -96,7 +107,7 @@ const AvatarInfoPage = () => {
                         </div>
 
 
-                        <div className="group">
+                        <div className="group" onClick={() => openImage(back_view_image)}>
                             <div className="w-36 h-28 border-2 border-gray-300 rounded-xl bg-gray-100 flex items-center justify-center group-hover:shadow-md transition">
                                 {back_view_image ? <img
                                     src={back_view_image}
@@ -153,6 +164,8 @@ const AvatarInfoPage = () => {
                     </button>
                 </div>}
             </div>
+
+            <ImagePreviewModal imgSrc={previewImage} />
         </Page>
     );
 };
